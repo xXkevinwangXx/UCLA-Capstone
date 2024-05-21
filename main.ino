@@ -37,9 +37,12 @@ states lhs(LIN1, LIN2, LIN3, LIN4, LENA, LENB);
 states linAct(LAIN1, LAIN2, LAENB);
 //int operation = 0;
 
+int integrator = 0;
+int lasterror = 0;
+
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.print(3);
   /*Sequence hist;
   move mov;
@@ -57,49 +60,40 @@ void setup() {
 }
 
 void loop() {
-  //pin reading for sensor
-  int ir1 = analogRead(IR1);
-  int ir2 = analogRead(IR2);
-  int ir3 = analogRead(IR3);
-  int ir4 = analogRead(IR4);
-  int ir5 = analogRead(IR5);
 
-  // Print the sensor values for debugging
-  Serial.print("IR1: "); Serial.print(ir1);
-  Serial.print(" IR2: "); Serial.print(ir2);
-  Serial.print(" IR3: "); Serial.print(ir3);
-  Serial.print(" IR4: "); Serial.print(ir4);
-  Serial.print(" IR5: "); Serial.println(ir5);
+  int z = 0;
+  PIDfollow(integrator, lasterror, lhs, rhs);
+  
+  // //analog color sensing is between 0-1023
+  // int threshold = 500;
+  //   // Line tracing logic
+  // if (ir1 < threshold || ir2 < threshold) {
+  //   Serial.print("Turning left");
+  //   delay(1000);
+  //   // Left sensors detect the line, turn left
+  //   //lhs.turnLeft(150);
+  //   //delay(1000);
+  // } else if (ir4 < threshold || ir5 < threshold) {
+  //   // Right sensors detect the line, turn right
+  //     Serial.print("Turning Right");
 
-  //analog color sensing is between 0-1023
-  int threshold = 500;
-    // Line tracing logic
-  if (ir1 < threshold || ir2 < threshold) {
-    Serial.print("Turning left");
-    // Left sensors detect the line, turn left
-    //lhs.turnLeft(150);
-    //delay(1000);
-  } else if (ir4 < threshold || ir5 < threshold) {
-    // Right sensors detect the line, turn right
-      Serial.print("Turning Right");
+  //   //rhs.turnRight(150);
+  //   //delay(1000);
 
-    //rhs.turnRight(150);
-    //delay(1000);
+  // } else if (ir3 < threshold) {
+  //   // Middle sensor is on the line, move forward
+  //     Serial.print("Going forward");
 
-  } else if (ir3 < threshold) {
-    // Middle sensor is on the line, move forward
-      Serial.print("Going forward");
+  //   //lhs.moveForward(150);
+  //   //rhs.moveForward(150);
+  //   //delay(1000);
 
-    //lhs.moveForward(150);
-    //rhs.moveForward(150);
-    //delay(1000);
-
-  } else {
-    // No sensor detects the line, stop moving
-    Serial.print("Stopping");
-    //drive.stopMoving();
-  }
-  //lhs.moveForward(50);
-  //rhs.moveForward(50);
-  //delay(1000);
+  // } else {
+  //   // No sensor detects the line, stop moving
+  //   Serial.print("Stopping");
+  //   //drive.stopMoving();
+  // }
+  // //lhs.moveForward(50);
+  // //rhs.moveForward(50);
+  // //delay(1000);
 }
