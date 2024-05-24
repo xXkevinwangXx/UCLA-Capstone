@@ -22,9 +22,10 @@ class states
   int _IN1, _IN2, _IN3, _IN4, _ENA, _ENB, 
   extendPin, retractPin;
 };
-/*
-void PIDfollow(int &Integrator, int &lastError);
 
+void PIDfollow(int &Integrator, int &lastError, states lhs, states rhs);
+
+/*
 int operate(int operation);
 
 //enableA = pulsewidth modulating pin digital 11 - in1 & in2

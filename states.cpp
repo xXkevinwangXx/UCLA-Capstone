@@ -60,20 +60,19 @@ bool states::moveForward(int speed)
   digitalWrite(_IN3, HIGH);
   digitalWrite(_IN4, LOW);
   analogWrite(_ENA, speed);
-  analogWrite(_ENB, speed);
-  Serial.print("moveForward executed");   
+  analogWrite(_ENB, speed);  
   return true;
 }
 
 bool states::moveBackward(int speed)
 {
-  analogWrite(_IN1, LOW);
-  analogWrite(_IN2, HIGH);
-  analogWrite(_IN3, LOW);
-  analogWrite(_IN4, HIGH);
+  digitalWrite(_IN1, LOW);
+  digitalWrite(_IN2, HIGH);
+  digitalWrite(_IN3, LOW);
+  digitalWrite(_IN4, HIGH);
   analogWrite(_ENA, speed);
   analogWrite(_ENB, speed);
-  return true;
+  return true;  
 }
 
 bool states::turnLeft(int speed)
@@ -105,26 +104,67 @@ bool states::stopMoving()
   return true;  
 }
 
-/*
-void PIDfollow(int &Integrator, int &lastError){
-  Kp = 0.07;
-  Ki = 0.0008;
-  Kd = 0.6;
+
+void PIDfollow(int &Integrator, int &lastError, states lhs, states rhs){
+  
+  float Kp = 0.25;
+  float Ki = 0.0032;
+  float Kd = 0.6;
 
   int IR1 = analogRead(A1);
-  int IR2 = analogRead(A1);
+  int IR2 = analogRead(A2);
   int IR3 = analogRead(A3);
-  int IR4 = -analogRead(A4);
-  int IR5 = -analogRead(A5);
+  int IR4 = analogRead(A4);
+  int IR5 = analogRead(A5);
 
-  int error = sum(IR1, IR2, IR4, IR5);
+  int error = IR1 + IR2 - IR4 - IR5;
   int P = error;
   Integrator = Integrator + error;
   int D = error - lastError;
   lastError = error;
+  
 
-  float motorspeed = P * Kp + I * Ki + D * Kd;
-  }*/
+  float motorspeed = P * Kp + Integrator * Ki + D * Kd;
+  int lhsspd = 200 + motorspeed;
+  int rhsspd = 200 - motorspeed;
+  if (lhsspd > 255)
+  {
+    lhsspd = 255;
+  }
+  if (rhsspd > 255)
+  {
+    rhsspd = 255;
+  }
+  if (rhsspd < -255)
+  {
+    rhsspd = -255;
+  }
+  if (lhsspd < -255)
+  {
+    lhsspd = -255;
+  }
+  Serial.print("   Diff: "); Serial.print(motorspeed);   Serial.print("   Error: "); Serial.print(error);
+  Serial.print("   Int: "); Serial.print(Integrator);   Serial.print("   Deriv: "); Serial.print(lastError);
+  Serial.print(" LHS: "); Serial.print(lhsspd);
+  Serial.print(" RHS: "); Serial.print(rhsspd);
+  // Print the sensor values for debugging
+  Serial.print(" IR1: "); Serial.print(IR1);
+  Serial.print(" IR2: "); Serial.print(IR2);
+  Serial.print(" IR3: "); Serial.print(IR3);
+  Serial.print(" IR4: "); Serial.print(IR4);
+  Serial.print(" IR5: "); Serial.println(IR5);
+
+  if(lhsspd < 0)
+  {
+    lhs.moveBackward(lhsspd);
+  }
+  else lhs.moveForward(lhsspd);
+  if(rhsspd < 0)
+  {
+    rhs.moveBackward(rhsspd);
+  }
+  else rhs.moveForward(rhsspd);
+  }
   /*Motorspeed adjustment here*/
 
 
