@@ -17,6 +17,7 @@ class states
   bool incLength(int speed);
   bool decLength(int speed);
 
+  //pickup pucks
 
   private:
   int _IN1, _IN2, _IN3, _IN4, _ENA, _ENB, 
@@ -24,6 +25,9 @@ class states
 };
 
 void PIDfollow(int &Integrator, int &lastError, states lhs, states rhs);
+bool fourWay(int sum);
+
+bool pushed();
 
 /*
 int operate(int operation);

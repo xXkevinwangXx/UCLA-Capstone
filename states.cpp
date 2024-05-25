@@ -75,28 +75,6 @@ bool states::moveBackward(int speed)
   return true;  
 }
 
-bool states::turnLeft(int speed)
-{
-  analogWrite(_IN1, HIGH);
-  analogWrite(_IN2, LOW);
-  analogWrite(_IN3, LOW);
-  analogWrite(_IN4, HIGH);
-  analogWrite(_ENA, speed);
-  analogWrite(_ENB, speed);
-  return true;
-}
-
-bool states::turnRight(int speed)
-{
-  analogWrite(_IN1, LOW);
-  analogWrite(_IN2, HIGH);
-  analogWrite(_IN3, HIGH);
-  analogWrite(_IN4, LOW);
-  analogWrite(_ENA, speed);
-  analogWrite(_ENB, speed);  
-  return true;  
-}
-
 bool states::stopMoving()
 {
   analogWrite(_ENA, 0);
@@ -104,12 +82,30 @@ bool states::stopMoving()
   return true;  
 }
 
+bool fourWay(int sum)
+{
+  int IR1 = analogRead(A1);
+  int IR2 = analogRead(A2);
+  int IR3 = analogRead(A3);
+  int IR4 = analogRead(A4);
+  int IR5 = analogRead(A5);
+  sum = IR1 + IR2 + IR3 + IR4 + IR5;
+  if(sum < 600){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
 
-void PIDfollow(int &Integrator, int &lastError, states lhs, states rhs){
+
+void PIDfollow(int &Integrator, int &lastError, states lhs, states rhs)
+{
   
-  float Kp = 0.25;
+  float Kp = 0.13;
   float Ki = 0.0032;
   float Kd = 0.6;
+
 
   int IR1 = analogRead(A1);
   int IR2 = analogRead(A2);
@@ -154,17 +150,24 @@ void PIDfollow(int &Integrator, int &lastError, states lhs, states rhs){
   Serial.print(" IR4: "); Serial.print(IR4);
   Serial.print(" IR5: "); Serial.println(IR5);
 
-  if(lhsspd < 0)
+  if(lhsspd < 0)  //turn left
   {
     lhs.moveBackward(lhsspd);
   }
   else lhs.moveForward(lhsspd);
-  if(rhsspd < 0)
+  if(rhsspd < 0)  //right right
   {
     rhs.moveBackward(rhsspd);
   }
   else rhs.moveForward(rhsspd);
-  }
+  
   /*Motorspeed adjustment here*/
+}
 
-
+bool pushed(){
+  int sensorVal = digitalRead(23);
+  if (sensorVal == HIGH)
+  {return false;}
+  else
+  {return true;}
+}
