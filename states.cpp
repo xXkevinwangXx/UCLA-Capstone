@@ -53,6 +53,7 @@ bool states::decLength(int speed)
   Serial.print("retraction executed");   
   return true;
 }
+
 bool states::moveForward(int speed)
 {
   digitalWrite(_IN1, HIGH); //
@@ -60,41 +61,18 @@ bool states::moveForward(int speed)
   digitalWrite(_IN3, HIGH);
   digitalWrite(_IN4, LOW);
   analogWrite(_ENA, speed);
-  analogWrite(_ENB, speed);
-  Serial.print("moveForward executed");   
+  analogWrite(_ENB, speed);  
   return true;
 }
 
 bool states::moveBackward(int speed)
 {
-  analogWrite(_IN1, LOW);
-  analogWrite(_IN2, HIGH);
-  analogWrite(_IN3, LOW);
-  analogWrite(_IN4, HIGH);
+  digitalWrite(_IN1, LOW);
+  digitalWrite(_IN2, HIGH);
+  digitalWrite(_IN3, LOW);
+  digitalWrite(_IN4, HIGH);
   analogWrite(_ENA, speed);
   analogWrite(_ENB, speed);
-  return true;
-}
-
-bool states::turnLeft(int speed)
-{
-  analogWrite(_IN1, HIGH);
-  analogWrite(_IN2, LOW);
-  analogWrite(_IN3, LOW);
-  analogWrite(_IN4, HIGH);
-  analogWrite(_ENA, speed);
-  analogWrite(_ENB, speed);
-  return true;
-}
-
-bool states::turnRight(int speed)
-{
-  analogWrite(_IN1, LOW);
-  analogWrite(_IN2, HIGH);
-  analogWrite(_IN3, HIGH);
-  analogWrite(_IN4, LOW);
-  analogWrite(_ENA, speed);
-  analogWrite(_ENB, speed);  
   return true;  
 }
 
@@ -105,26 +83,121 @@ bool states::stopMoving()
   return true;  
 }
 
-/*
-void PIDfollow(int &Integrator, int &lastError){
-  Kp = 0.07;
-  Ki = 0.0008;
-  Kd = 0.6;
+bool pushed(){
+  int sensorVal = digitalRead(23);
+  if (sensorVal == HIGH)
+  {return false;}
+  else
+  {return true;}
+}
+
+bool fourWay(int sum) //returns if on a 4 way intersection
+{
+  int IR1 = analogRead(A1);
+  int IR2 = analogRead(A2);
+  int IR3 = analogRead(A3);
+  int IR4 = analogRead(A4);
+  int IR5 = analogRead(A5);
+  sum = IR1 + IR2 + IR3 + IR4 + IR5;
+  if(sum < 600){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
+
+int distance(){ //returns distance from ultrasound sensor
+  const int trigPin = 8;  // Trigger pin connected to digital pin 8
+  const int echoPin = 7; // Echo pin connected to digital pin 7
+  long duration;
+  int distance;
+  // Clear the trigPin
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+    
+  // Set the trigPin HIGH for 10 microseconds
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+    
+  // Read the echoPin, returns the sound wave travel time in microseconds
+  duration = pulseIn(echoPin, HIGH);
+  
+  // Calculate the distance
+  distance = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
+    
+  // Print the distance on the serial monitor
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+  
+  // Wait for 1 second before taking the next measurement
+  delay(500);
+  return distance;
+}
+
+void PIDfollow(int &Integrator, int &lastError, states lhs, states rhs){
+  
+  float Kp = 0.13;
+  float Ki = 0.0032;
+  float Kd = 0.6;
+
 
   int IR1 = analogRead(A1);
-  int IR2 = analogRead(A1);
+  int IR2 = analogRead(A2);
   int IR3 = analogRead(A3);
-  int IR4 = -analogRead(A4);
-  int IR5 = -analogRead(A5);
+  int IR4 = analogRead(A4);
+  int IR5 = analogRead(A5);
 
-  int error = sum(IR1, IR2, IR4, IR5);
+  int error = IR1 + IR2 - IR4 - IR5;
   int P = error;
   Integrator = Integrator + error;
   int D = error - lastError;
   lastError = error;
+  
 
-  float motorspeed = P * Kp + I * Ki + D * Kd;
-  }*/
+  float motorspeed = P * Kp + Integrator * Ki + D * Kd;
+  int lhsspd = 200 + motorspeed;
+  int rhsspd = 200 - motorspeed;
+  if (lhsspd > 255)
+  {
+    lhsspd = 255;
+  }
+  if (rhsspd > 255)
+  {
+    rhsspd = 255;
+  }
+  if (rhsspd < -255)
+  {
+    rhsspd = -255;
+  }
+  if (lhsspd < -255)
+  {
+    lhsspd = -255;
+  }
+  Serial.print("   Diff: "); Serial.print(motorspeed);   Serial.print("   Error: "); Serial.print(error);
+  Serial.print("   Int: "); Serial.print(Integrator);   Serial.print("   Deriv: "); Serial.print(lastError);
+  Serial.print(" LHS: "); Serial.print(lhsspd);
+  Serial.print(" RHS: "); Serial.print(rhsspd);
+  // Print the sensor values for debugging
+  Serial.print(" IR1: "); Serial.print(IR1);
+  Serial.print(" IR2: "); Serial.print(IR2);
+  Serial.print(" IR3: "); Serial.print(IR3);
+  Serial.print(" IR4: "); Serial.print(IR4);
+  Serial.print(" IR5: "); Serial.println(IR5);
+
+  if(lhsspd < 0)  //turn left
+  {
+    lhs.moveBackward(lhsspd);
+  }
+  else lhs.moveForward(lhsspd);
+  if(rhsspd < 0)  //right right
+  {
+    rhs.moveBackward(rhsspd);
+  }
+  else rhs.moveForward(rhsspd);
+  }
   /*Motorspeed adjustment here*/
-
 
