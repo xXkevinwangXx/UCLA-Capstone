@@ -17,14 +17,26 @@ class states
   bool incLength(int speed);
   bool decLength(int speed);
 
+  //Ultrasonic
+  states(int trigPin, int echoPin);
+  int distance();
+
+
+  //pickup pucks
 
   private:
   int _IN1, _IN2, _IN3, _IN4, _ENA, _ENB, 
-  extendPin, retractPin;
+  extendPin, retractPin, _trigPin, _echoPin;
 };
-/*
-void PIDfollow(int &Integrator, int &lastError);
 
+void PIDfollow(int &Integrator, int &lastError, states lhs, states rhs);
+void PIDfollowBW(int &Integrator, int &lastError, states lhs, states rhs);
+bool fourWay(int &sum);
+bool pushed();
+bool rightTurn(states lhs, states rhs, int wait);
+bool leftTurn(states lhs, states rhs, int wait);
+
+/*
 int operate(int operation);
 
 //enableA = pulsewidth modulating pin digital 11 - in1 & in2
