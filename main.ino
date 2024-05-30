@@ -11,9 +11,11 @@ Servo claw;  // Create a servo object to control a servo
 //servo pos 150 = NEARLY CLOSED
 
 int closed = 130;
-int open = 0;
+int open = -10;
 int ninety = 750;
-int halfway = 700;
+int halfway = 750;
+int lefts = 0;
+int rights = 0;
 
 #define IR1 A1
 #define IR2 A2
@@ -61,7 +63,7 @@ int lasterror = 0;
 int puckArray[] = { 6, 1, 4, 6 };  //temporary values  drop off location = 6, second pickup = 1, first pickup = 6
 int pucks = sizeof(puckArray) - 1;
 //index starts at 0 then 1 then 2
-int i = 0;
+int i = 5;
 int max = sizeof(puckArray) - 1;  //while i > 1 focus only on pickup pucks
 int FourWaysCrossed = 0;
 int colorSum = 0;
@@ -73,6 +75,8 @@ void setup() {
   pinMode(LED, OUTPUT);
   pinMode(LIMIT, INPUT_PULLUP);
   digitalWrite(LED, LOW);
+  linAct.incLength(255);
+  delay(2000);
   claw.attach(13);  // Attaches the servo on pin 13 to the servo object
   claw.write(open);   // Initially position the servo at 0 degrees
   delay(3000);        // Wait a moment to let the servo reach the position
@@ -81,7 +85,19 @@ void setup() {
 void loop() 
 {
   digitalWrite(LED, LOW);
-  if(i <= (pucks-1))
+  if(i == 5)
+  {
+    PIDfollow(integrator, lasterror, lhs, rhs);
+    if(us.distance()<25)
+    {
+      digitalWrite(LED, HIGH);
+      leftTurn(lhs, rhs, ninety);
+      digitalWrite(LED, LOW);
+      i = 0;
+      lefts++;
+    }
+  }
+  else if(i <= (pucks-1))
   {
     double nextBranch = ceil((double)puckArray[i] / 2);
     bool fourway = fourWay(colorSum);    
@@ -95,7 +111,7 @@ void loop()
           PIDfollow(integrator, lasterror, lhs, rhs);
         }
         PIDfollow(integrator,lasterror, lhs, rhs);
-        delay(halfway - 10);
+        delay(halfway);
         lhs.stopMoving();
         rhs.stopMoving();
         FourWaysCrossed++;
@@ -110,22 +126,31 @@ void loop()
         digitalWrite(LED, HIGH);
         while(fourWay(colorSum))
         {
-          PIDfollowBW(integrator, lasterror, lhs, rhs);
+          PIDfollow(integrator, lasterror, lhs, rhs);
         }
+        PIDfollow(integrator, lasterror, lhs, rhs);
+        delay(halfway);
+        digitalWrite(LED, LOW);
+        lhs.stopMoving();
+        rhs.stopMoving();
+        rightTurn(lhs, rhs, ninety);
+        rightTurn(lhs, rhs, ninety);
+        FourWaysCrossed--;
+      }
+      else
+      {
+        rightTurn(lhs, rhs, ninety);
+        digitalWrite(LED, HIGH);
+        lhs.stopMoving();
+        rhs.stopMoving();
+        delay(10);
+        rightTurn(lhs, rhs, ninety);
         digitalWrite(LED, LOW);
         while(!fourWay(colorSum))
         {
-          PIDfollowBW(integrator, lasterror, lhs, rhs);
+          PIDfollow(integrator, lasterror, lhs, rhs);
         }
-        digitalWrite(LED, HIGH);
-        PIDfollow(integrator, lasterror, lhs, rhs);
-        delay(halfway);
-        lhs.stopMoving();
-        rhs.stopMoving();
-        digitalWrite(LED, LOW);
-        FourWaysCrossed--;
       }
-      else PIDfollowBW(integrator, lasterror, lhs, rhs);
     }
     else
     {
@@ -143,45 +168,46 @@ void loop()
         // delay(ninety);
         rightTurn(lhs, rhs, ninety);
       }
-      // linAct.incLength(200);       //extend linAct to max
-      delay(350);
-      while(!pushed())
+      while(us.distance() > 6)
       {
+        digitalWrite(LED, HIGH);
         PIDfollow(integrator, lasterror, lhs, rhs);
       }
+      digitalWrite(LED, LOW);
       lhs.stopMoving();
       rhs.stopMoving();
+      claw.write(open);
+      delay(3000);
+      while (!pushed()) 
+      {  //while the switch isn't push dec length
+        linAct.decLength(255);
+      }
+      claw.write(closed);
+      delay(3000);
+      linAct.incLength(255);
       delay(2000);
-      // claw.write(open);
-      // delay(3000);
-      // while (pushed() == false) 
-      // {  //while the switch isn't push dec length
-      //   linAct.decLength(200);
-      // }
-      // claw.write(closed);
-      // delay(3000);
-      // linAct.incLength(200);
-      // delay(150);
-      while(!fourWay(colorSum))
-      {
-        PIDfollowBW(integrator, lasterror, lhs, rhs);
+      lhs.moveBackward(255);
+      rhs.moveBackward(255);
+      delay(halfway-100);
+      rightTurn(lhs, rhs, ninety);
+      while(!fourWay(colorSum)){
+        PIDfollow(integrator, lasterror, lhs, rhs);
       }
       PIDfollow(integrator, lasterror, lhs, rhs);
       delay(halfway);
-
       if (puckArray[i] % 2 != 0) 
       {                    //reverse the turn based off of evenness of current puck
         // lhs.moveForward(255);
         // rhs.moveBackward(255);
         // delay(ninety);
-        rightTurn(lhs, rhs, ninety + 300);
+        leftTurn(lhs, rhs, ninety);
       } 
       else 
       {  //even puck turn left
         // lhs.moveBackward(200);
         // rhs.moveForward(255);
         // delay(ninety);
-        leftTurn(lhs, rhs, ninety);
+        rightTurn(lhs, rhs, ninety);
       }      
       i++;
 
