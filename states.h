@@ -21,7 +21,6 @@ class states
   states(int trigPin, int echoPin);
   int distance();
 
-
   //pickup pucks
 
   private:
@@ -33,8 +32,10 @@ void PIDfollow(int &Integrator, int &lastError, states lhs, states rhs);
 void PIDfollowBW(int &Integrator, int &lastError, states lhs, states rhs);
 bool fourWay(int &sum);
 bool pushed();
+bool pushedLower();
 bool rightTurn(states lhs, states rhs, int wait);
 bool leftTurn(states lhs, states rhs, int wait);
+bool puckTurn();
 
 /*
 int operate(int operation);
