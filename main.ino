@@ -10,8 +10,9 @@ Servo claw;         // Create a servo object to control a servo
 //servo pos 0 = FULLY OPEN
 //servo pos 150 = NEARLY CLOSED
 
-int closed = 130;
-int open = -10;
+int closed = 160;
+bool rampClimbed = false;
+int open = 0;
 int ninety = 750;
 int halfway = 750;
 int lefts = 0;
@@ -42,6 +43,7 @@ int LENA = 12;  //replace # with proper pin number
 int LENB = 11;  //replace # with proper pin number
 
 int LIMIT = 23;
+int LIMIT1 = 24;
 
 //Linear Actuator Bridge replace # with proper pin number
 int LAIN1 = 45;
@@ -60,13 +62,11 @@ states linAct(LAIN1, LAIN2, LAENB);
 
 int integrator = 0;
 int lasterror = 0;
-int puckArray[] = { 6, 1, 4, 6 };                            //temporary values  drop off location = 6, second pickup = 1, first pickup = 6
+int puckArray[] = { 3, 2, 5, 4 };                            //temporary values  drop off location = 6, second pickup = 1, first pickup = 6
 int pucks = (sizeof(puckArray) / sizeof(puckArray[0])) - 1;  //pucks is now = 3
 //index starts at 0 then 1 then 2
-int i = 0;
-int max = sizeof(puckArray) - 1;
+int i = 10;
 int FourWaysCrossed = 0;
-int RightTurnCrossed = 0;
 int colorSum = 0;
 int distFromWall = 0;
 
@@ -75,6 +75,7 @@ void setup() {
   Serial.begin(115200);
   pinMode(LED, OUTPUT);
   pinMode(LIMIT, INPUT_PULLUP);
+  pinMode(24, INPUT_PULLUP);
   digitalWrite(LED, LOW);
   linAct.incLength(255);
   delay(2000);
@@ -85,17 +86,24 @@ void setup() {
 
 void loop() {
   digitalWrite(LED, LOW);
-  if (i == 5)  //ONLY FOR start to end first corner turn
+  if (i == 10)  //ONLY FOR start to end first corner turn
   {
-    PIDfollow(integrator, lasterror, lhs, rhs);
-    if (us.distance() < 25) {
+    if (us.distance() < 7)
+    {
+      lhs.stopMoving();
+      rhs.stopMoving();
+    }
+    else if (leftAble()) 
+    {
       digitalWrite(LED, HIGH);
       leftTurn(lhs, rhs, ninety);
       digitalWrite(LED, LOW);
       i = 0;
       lefts++;
     }
-  } else if (i <= (pucks - 1))  //pucks - 1 = 2, i initialized to 0
+    else PIDfollow(integrator, lasterror, lhs, rhs);
+  } 
+  else if (i <= (pucks - 1))  //pucks - 1 = 2, i initialized to 0
   {
     double nextBranch = ceil((double)puckArray[i] / 2);
     bool fourway = fourWay(colorSum);
@@ -151,13 +159,15 @@ void loop() {
         // delay(ninety);
         rightTurn(lhs, rhs, ninety);
       }
-      while (us.distance() > 6) {
+      while (pushedLower() == false) {  //CHANGED FROM US TO LIMIT SWITCH
         digitalWrite(LED, HIGH);
         PIDfollow(integrator, lasterror, lhs, rhs);
       }
       digitalWrite(LED, LOW);
       lhs.stopMoving();
       rhs.stopMoving();
+      linAct.decLength(255);
+      delay(halfway + 300);
       claw.write(open);
       delay(3000);
       while (!pushed()) {  //while the switch isn't push dec length
@@ -190,57 +200,78 @@ void loop() {
       i++;
     }
 
-  } else  //i = 3 center on branch 2
+  } 
+  else  //i = 3 center on branch 2
   {
-
-    if (FourWaysCrossed < 3) {  //logic statement for crossing remaining 4ways
-      PIDfollow(lasterror, integrator, lhs, rhs);
-      if (fourWay(colorSum) == true) {
-        while (fourWay(colorSum) == true) {
-          PIDfollow(integrator, lasterror, lhs, rhs);
-        }
-        PIDfollow(integrator, lasterror, lhs, rhs);
-        delay(halfway);
-        FourWaysCrossed++;
-      }
+    if ((us.distance() < 7)) 
+    {
+      lhs.stopMoving();
+      rhs.stopMoving();
     }
-    if (FourWaysCrossed == 3) {
-      PIDfollow(lasterror, integrator, lhs, rhs);
-      if (lefts == 2 && RightTurnCrossed < puckArray[i] && puckTurn() == true) {
-        PIDfollow(integrator, lasterror, lhs, rhs);
-        delay(halfway);
-        RightTurnCrossed++;
+    else if (leftAble())
+    {
+      digitalWrite(LED, HIGH);
+      leftTurn(lhs, rhs, ninety);
+      digitalWrite(LED, LOW);
+      lefts++;
+    }
+    // else if ((us.distance() < 25))
+    // {
+    //   while(us.distance() < 25)
+    //   {
+    //     PIDfollow(integrator, lasterror, lhs, rhs);
+    //   }
+    //   rampClimbed = true;
+    // }
+    else if ((lefts == 2) && (puckTurn()))
+    {
+      digitalWrite(LED, HIGH);      
+      while(puckTurn())
+      {
+        lhs.moveForward(200);
+        rhs.moveForward(200);
       }
-      if (RightTurnCrossed == puckArray[i]) {
-        rightTurn(lhs, rhs, ninety);
-        while (us.distance() > 6) {
-          PIDfollow(integrator, lasterror, lhs, rhs);
-        }
-        lhs.stopMoving();
-        rhs.stopMoving();
+      PIDfollow(integrator, lasterror, lhs, rhs);
+      delay(halfway);
+      digitalWrite(LED, LOW);
+      rights++;
+    }
+    else if ((lefts == 2) && (rights == puckArray[i]))
+    {
+      rightTurn(lhs, rhs, ninety);
+      while (pushedLower() == false) {
+        PIDfollow(integrator, lasterror, lhs, rhs);
+      }
+      lhs.stopMoving();
+      rhs.stopMoving();
+      while(!pushed())
+      {
         linAct.decLength(255);  //might not be necessary
-        delay(2000);
-        claw.write(open);
-        delay(3000);
-        rightTurn(lhs, rhs, ninety);  //do a 180
-        while (fourWay(colorSum) == false) {
-          PIDfollow(integrator, lasterror, lhs, rhs);
-        }
-        while (fourWay(colorSum) == true) {
-          PIDfollow(integrator, lasterror, lhs, rhs);
-        }
+      }
+      claw.write(open);
+      delay(3000);
+      linAct.incLength(255);
+      delay(2000);
+      lhs.moveBackward(255);
+      rhs.moveBackward(255);
+      delay(halfway - 100);
+      rightTurn(lhs, rhs, ninety);
+      while (!fourWay(colorSum)) {
         PIDfollow(integrator, lasterror, lhs, rhs);
-        delay(halfway);
-        rightTurn(lhs, rhs, ninety);
-
-        while (us.distance() > 25) {
-          PIDfollow(integrator, lasterror, lhs, rhs);
-        }
       }
-      if (us.distance() < 25 && lefts < 2) {  //if at turn (may cause issue at slanted turn careful!!)
-        leftTurn(lhs, rhs, ninety);
-        lefts++;
+      lhs.moveForward(255);
+      rhs.moveForward(255);
+      delay(halfway);
+      rightTurn(lhs, rhs, ninety);
+      while (us.distance() > 25) {
+        PIDfollow(integrator, lasterror, lhs, rhs);
       }
+      lhs.stopMoving();
+      rhs.stopMoving();
+      exit(0);
     }
+    else PIDfollow(integrator, lasterror, lhs, rhs);
+
+
   }
 }

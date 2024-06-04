@@ -116,6 +116,15 @@ bool states::stopMoving() {
   return true;
 }
 
+bool pushedLower() {
+  int sensorVal = digitalRead(24);
+  if (sensorVal == HIGH) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
 bool pushed() {
   int sensorVal = digitalRead(23);
   if (sensorVal == HIGH) {
@@ -140,16 +149,26 @@ bool fourWay(int &sum)  //returns if on a 4 way intersection
   }
 }
 
-bool puckTurn() { //return true when clear right turn only
+bool leftAble() {  //return true when at left turn
   int IR1 = analogRead(A1);
   int IR2 = analogRead(A2);
   int IR3 = analogRead(A3);
   int IR4 = analogRead(A4);
   int IR5 = analogRead(A5);
-  if (IR1 > 100 && IR3+IR4+IR5 < 300){
+  if (IR5 > 200 && IR2 + IR3 + IR4 + IR1 < 800) {
     return true;
-  }
-  else return false;
+  } else return false;
+}
+
+bool puckTurn() {  //return true when clear right turn only
+  int IR1 = analogRead(A1);
+  int IR2 = analogRead(A2);
+  int IR3 = analogRead(A3);
+  int IR4 = analogRead(A4);
+  int IR5 = analogRead(A5);
+  if (IR1 > 100 && IR2 + IR3 + IR4 + IR5 < 800) {
+    return true;
+  } else return false;
 }
 
 bool leftTurn(states lhs, states rhs, int wait) {
@@ -172,7 +191,7 @@ bool rightTurn(states lhs, states rhs, int wait) {
   //first ninety turn
   lhs.moveForward(255);
   rhs.moveBackward(255);
-  delay(wait);
+  delay(wait + 100);
   IR2 = analogRead(A2);
   while (IR2 > 200) {
     lhs.moveForward(255);
