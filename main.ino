@@ -88,7 +88,7 @@ void loop() {
   digitalWrite(LED, LOW);
   if (i == 10)  //ONLY FOR start to end first corner turn
   {
-    if (us.distance() < 7)
+    if (us.distance() < 13)
     {
       lhs.stopMoving();
       rhs.stopMoving();
@@ -203,7 +203,7 @@ void loop() {
   } 
   else  //i = 3 center on branch 2
   {
-    if ((us.distance() < 7)) 
+    if ((us.distance() < 13)) 
     {
       lhs.stopMoving();
       rhs.stopMoving();
@@ -211,6 +211,8 @@ void loop() {
     else if (leftAble())
     {
       digitalWrite(LED, HIGH);
+      PIDfollow(integrator, lasterror, lhs, rhs);
+      delay(halfway);
       leftTurn(lhs, rhs, ninety);
       digitalWrite(LED, LOW);
       lefts++;
