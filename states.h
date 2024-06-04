@@ -35,6 +35,7 @@ bool pushed();
 bool pushedLower();
 bool rightTurn(states lhs, states rhs, int wait);
 bool leftTurn(states lhs, states rhs, int wait);
+bool leftAble();
 bool puckTurn();
 
 /*
